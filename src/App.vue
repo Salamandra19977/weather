@@ -2,7 +2,7 @@
   <div id="app">
     <header-info></header-info>
     <div class="input_box">
-      <input class="input_city" @keyup.enter="getDate" v-model="searchValue" type="text" name="">
+      <input v-focus class="input_city" @keyup.enter="getDate" v-model="searchValue" type="text" name="">
       <button class="search_btn" @click="getDate"></button>   
     </div>
       <Message>    
@@ -10,19 +10,19 @@
       </Message>
     <div v-show="showDate" class="bg_weather">
         <div class="fullDate">
-          <div class="box_weather" v-for = "(val,idx) in objWeather" :key="idx">
+          <div   class="box_weather" v-for = "(val,idx) in objWeather" :key="idx">
             <div class="date_weather">
-              {{val.date}}
+              {{val.date|shortDate}}
             </div>
             <div class="status_weather">
               <IconWeather :iconStr = "val.icon"/>
               {{val.description}}
             </div>
             <div class="weather_list">
-              <p>Температура: {{ val.temp}}℃</p>
-              <p>Влажность: {{ val.humidity}}% </p>
-              <p>Атмосф.давление: {{ val.pressure}}Пa</p>
-              <p>Скорость ветра: {{ val.wind}}м/с</p>
+              <p v-changestyle.temp="val.temp">Температура: {{ val.temp | sizeTemp }}</p>
+              <p>Влажность: {{ val.humidity | sizeHumidity}}</p>
+              <p>Атмосф.давление: {{ val.pressure | sizePressure}}</p>
+              <p v-changestyle.wind="val.wind">Скорость ветра: {{ val.wind |sizeWind}}</p>
             </div> 
           </div>
       </div>     
@@ -36,9 +36,19 @@ import { bus } from './main'
 import IconWeather from './components/IconWeather.vue'
 import Message from './Message.vue'
 import DateMinTemperature from './components/DateMinTemperature.vue'
+import ParseDate from './mixins/parseDate'
+
 export default {
   name: 'App',
   //локальная регистрация компонентов
+  mixins: [ParseDate],
+  directives:{
+    focus:{
+      inserted:function(el){
+        el.focus();
+      }
+    }
+  },
   components: {
     IconWeather, DateMinTemperature, Message
   },
@@ -47,7 +57,8 @@ export default {
       searchValue: "",
       url:"http://api.openweathermap.org/data/2.5/forecast?q=",
       apiKey:"dee4ae5a7f92682673b9bc825467e808",
-      objWeather:[{        
+      objWeather:[{
+        date:''        
       }],
       min_temperature:'',
       date_min_temperature:'',
@@ -66,21 +77,6 @@ export default {
       ))
       .catch(error => this.errorMessage = error , this.showDate = false );
       bus.$emit('city',this.searchValue,this.errorMessage);
-    },
-    parseDate(obj){
-      console.log(obj)
-      this.objWeather.length = 0;
-      for(let key of obj.list){
-        this.objWeather.push({
-          "temp":key.main.temp,
-          "date":key.dt_txt,
-          "pressure":key.main.pressure,
-          "humidity":key.main.humidity,
-          "description":key.weather[0].description,
-          "wind":key.wind.speed,
-          "icon":key.weather[0].icon
-        });
-      }
     },
     setMinTemp(data){
       this.min_temperature = data.temp
@@ -128,6 +124,7 @@ export default {
     margin: 3px;
     padding: 3px;
     border: 2px solid #320135;
+    color:#000;
   }
   .error{
     width: 400px;
@@ -135,10 +132,6 @@ export default {
     margin-left: auto;
     margin-right: auto;
     margin-bottom: 20px;
-  }
-  :active, :hover, :focus {
-    outline: 0;
-    outline-offset: 0;
   }
   .search_btn {
     background-color:#320135;
